@@ -398,7 +398,7 @@ def test_should_mutate_well(session):
 
 def sort_setup(session):
     pets = [
-        Pet(id=2, name="Lassie", pet_kind="dog", hair_kind=Hairkind.LONG),
+        Pet(id=2, name="Lassie", pet_kind="dog", hair_kind=Hairkind.LONG, reporter_id=2),
         Pet(id=22, name="Alf", pet_kind="cat", hair_kind=Hairkind.LONG),
         Pet(id=3, name="Barf", pet_kind="dog", hair_kind=Hairkind.LONG),
     ]
@@ -412,6 +412,7 @@ def test_sort(session):
     class PetNode(SQLAlchemyObjectType):
         class Meta:
             model = Pet
+            only_fields = ['id', 'name', 'pet_kind', 'hair_kind']
             interfaces = (Node,)
 
     class PetConnection(Connection):
@@ -430,6 +431,7 @@ def test_sort(session):
             PetConnection, sort=sort_argument_for_model(Pet, False)
         )
         noSort = SQLAlchemyConnectionField(PetConnection, sort=None)
+        onlyFieldSort = SQLAlchemyConnectionField(PetConnection)
 
     query = """
         query sortTest {
@@ -476,6 +478,13 @@ def test_sort(session):
                     }
                 }
             }
+            onlyFieldSort(sort: reporter_id_asc){
+                edges{
+                    node{
+                        name
+                    }
+                }
+            }
         }
     """
 
@@ -501,6 +510,9 @@ def test_sort(session):
         "descSort": makeNodes([{"name": "Lassie"}, {"name": "Barf"}, {"name": "Alf"}]),
         "singleColumnSort": makeNodes(
             [{"name": "Lassie"}, {"name": "Barf"}, {"name": "Alf"}]
+        ),
+        "onlyFieldSort": makeNodes(
+            [{"name": "Barf"}, {"name": "Alf"}, {"name": "Lassie"}]
         ),
     }  # yapf: disable
 
